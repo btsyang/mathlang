@@ -1,0 +1,35 @@
+* CoordEval
+:PROPERTIES:
+:Source: MML
+:Status: draft
+:CREATED: [2026-01-19 Mon 14:30]
+:END:
+
+** My understanding (raw English)
+
+\[
+\vec{b}_1 = \begin{pmatrix}1\\2\end{pmatrix},\quad
+\vec{b}_2 = \begin{pmatrix}3\\4\end{pmatrix}
+\]
+
+\[
+\vec{v} = \begin{pmatrix}1\\1\end{pmatrix}
+\]
+
+\[
+b = \{\vec{b}_1,\vec{b}_2\}
+\]
+
+\[
+[\vec{v}]_b \leftarrow \text{eval}
+\]
+
+
+** Key atoms
+- 
+
+** Questions
+- 
+
+** Check result
+- 
