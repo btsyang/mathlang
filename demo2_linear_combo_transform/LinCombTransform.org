@@ -1,0 +1,54 @@
+* LinCombTransform
+:PROPERTIES:
+:Source: MML
+:Status: draft
+:CREATED: [2026-01-21 Wed 09:14]
+:END:
+
+** My understanding (raw English)
+*** Given bases
+\[
+\vec{b}_1 = \begin{pmatrix}1\\0\end{pmatrix},\quad
+\vec{b}_2 = \begin{pmatrix}0\\1\end{pmatrix}
+\]
+
+\[
+\vec{c}_1 = \begin{pmatrix}1\\1\end{pmatrix},\quad
+\vec{c}_2 = \begin{pmatrix}1\\-1\end{pmatrix}
+\]
+
+\[
+b = \{\vec{b}_1,\vec{b}_2\}
+\]
+\[
+c = \{\vec{c}_1,\vec{c}_2\}
+\]
+*** Define linear transform by linear combination
+\[
+T(\vec{b}_1) = 2\vec{c}_1 + 1\vec{c}_2
+\]
+\[
+T(\vec{b}_2) = -1\vec{c}_1 + 3\vec{c}_2
+\]
+*** Input vector
+
+\[
+\vec{v} = \begin{pmatrix}1\\2\end{pmatrix}
+\]
+
+*** Evaluate
+
+\[
+T(\vec{v}) \leftarrow \text{eval}
+\]
+
+
+
+** Key atoms
+- 
+
+** Questions
+- 
+
+** Check result
+- 
