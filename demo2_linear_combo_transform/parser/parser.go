@@ -1,12 +1,22 @@
-package paser
+package parser
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	// "strconv"
 )
 
+// ParseReader 从输入流中解析线性代数表达式，构建抽象语法树
+// 参数：
+//
+//	r: 输入流，通常是文件或标准输入
+//
+// 返回：
+//
+//	*AST: 构建的抽象语法树
+//	error: 解析过程中遇到的错误
 func ParseReader(r io.Reader) (*AST, error) {
 	l := NewLexer(r)
 	ast := &AST{
@@ -15,22 +25,31 @@ func ParseReader(r io.Reader) (*AST, error) {
 		Transforms: make(map[string]*TransformRule),
 	}
 	var curBasis string
-	for tok := l.Next(); tok != nil; tok = l.Next() {
+	for {
+		tok, err := l.Next()
+		if err != nil {
+			return nil, err
+		}
+		if tok == nil {
+			break
+		}
 		switch tok.Kind {
 		case "BasisAssign":
 			// fmt.Println("tok.Args", tok.Args)
 			args := tok.Args.(*BasisAssignArgs)
 			curBasis = args.Name
 			if _, ok := ast.Bases[curBasis]; ok {
-				panic("basis redefined: " + curBasis)
+				return nil, fmt.Errorf("basis redefined: %s", curBasis)
 			}
 			ast.Bases[curBasis] = &Basis{Name: curBasis}
 			for _, vn := range args.Vecs {
 				key := vn // e.g. "b1"
 				if vec, ok := ast.Vecs[key]; !ok {
-					panic("basis uses undefined vector: " + key)
+					return nil, fmt.Errorf("basis uses undefined vector: %s", key)
 				} else {
 					ast.Bases[curBasis].Vecs = append(ast.Bases[curBasis].Vecs, vec)
+					// 设置向量的 Basis 字段为当前基
+					vec.Basis = ast.Bases[curBasis]
 				}
 			}
 
@@ -50,7 +69,7 @@ func ParseReader(r io.Reader) (*AST, error) {
 				if toBasisChecker {
 					toBasisChecker = (toBasis == t[2])
 				} else {
-					panic("to Basis error ")
+					return nil, fmt.Errorf("to Basis error: inconsistent basis in linear combination")
 				}
 
 				coeffStr := strings.ReplaceAll(t[1], " ", "")
@@ -60,7 +79,11 @@ func ParseReader(r io.Reader) (*AST, error) {
 				} else if coeffStr == "-" {
 					coeff = -1
 				} else {
-					coeff, _ = strconv.ParseFloat(coeffStr, 64)
+					var err error
+					coeff, err = strconv.ParseFloat(coeffStr, 64)
+					if err != nil {
+						return nil, fmt.Errorf("invalid coefficient: %s", coeffStr)
+					}
 				}
 				vec := t[2] + t[3]
 				linearTerms = append(linearTerms, LinearTerm{Coeff: coeff, Vec: vec})
@@ -68,9 +91,16 @@ func ParseReader(r io.Reader) (*AST, error) {
 			// 1. 查或建 TransformRule
 			tr, ok := ast.Transforms[args.Transform]
 			if !ok {
+				fromBasis := args.DomainVec[0]
+				if _, exists := ast.Bases[fromBasis]; !exists {
+					return nil, fmt.Errorf("undefined basis: %s", fromBasis)
+				}
+				if _, exists := ast.Bases[toBasis]; !exists {
+					return nil, fmt.Errorf("undefined basis: %s", toBasis)
+				}
 				tr = &TransformRule{
 					Name:      args.Transform,
-					FromBasis: ast.Bases[args.DomainVec[0]], // 默认
+					FromBasis: ast.Bases[fromBasis], // 默认
 					ToBasis:   ast.Bases[toBasis],
 					Map:       make(map[string][]LinearTerm),
 				}
@@ -85,12 +115,12 @@ func ParseReader(r io.Reader) (*AST, error) {
 
 			v, ok := ast.Vecs[args.Vec]
 			if !ok {
-				panic("eval uses undefined vector: " + args.Vec)
+				return nil, fmt.Errorf("eval uses undefined vector: %s", args.Vec)
 			}
 
 			basis, ok := ast.Bases[args.Basis]
 			if !ok {
-				panic("eval uses undefined basis: " + args.Basis)
+				return nil, fmt.Errorf("eval uses undefined basis: %s", args.Basis)
 			}
 
 			ast.Eval = &EvalChangeBasis{
@@ -101,12 +131,12 @@ func ParseReader(r io.Reader) (*AST, error) {
 			args := tok.Args.(*EvalTransformArgs)
 			v, ok := ast.Vecs[args.VecName]
 			if !ok {
-				panic("eval uses undefined vector: " + args.VecName)
+				return nil, fmt.Errorf("eval uses undefined vector: %s", args.VecName)
 			}
 
 			t, ok := ast.Transforms[args.Transform]
 			if !ok {
-				panic("eval uses undefined transform: " + args.Transform)
+				return nil, fmt.Errorf("eval uses undefined transform: %s", args.Transform)
 			}
 
 			ast.Eval = &EvalTransform{
