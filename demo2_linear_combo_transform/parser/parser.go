@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	// "strconv"
@@ -38,12 +39,26 @@ func ParseReader(r io.Reader) (*AST, error) {
 			// fmt.Println("tok.Args", tok.Args)
 			args := tok.Args.(*BasisAssignArgs)
 			curBasis = args.Name
+
+			// 检查基名称是否符合规范（单个小写字母）
+			if !regexp.MustCompile(`^[a-z]$`).MatchString(curBasis) {
+				return nil, fmt.Errorf("invalid basis name: %s, basis name should be a single lowercase letter", curBasis)
+			}
+
 			if _, ok := ast.Bases[curBasis]; ok {
 				return nil, fmt.Errorf("basis redefined: %s", curBasis)
 			}
 			ast.Bases[curBasis] = &Basis{Name: curBasis}
+
+			// 检查分量名称是否符合规范（基名称加上数字下标）
 			for _, vn := range args.Vecs {
 				key := vn // e.g. "b1"
+
+				// 检查分量名称是否以基名称开头，后跟数字
+				if !regexp.MustCompile(`^` + curBasis + `\d+$`).MatchString(key) {
+					return nil, fmt.Errorf("invalid vector name in basis %s: %s, vector name should be %s followed by number", curBasis, key, curBasis)
+				}
+
 				if vec, ok := ast.Vecs[key]; !ok {
 					return nil, fmt.Errorf("basis uses undefined vector: %s", key)
 				} else {
